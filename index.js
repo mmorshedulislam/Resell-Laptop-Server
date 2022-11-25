@@ -171,7 +171,7 @@ async function run() {
       res.send(result);
     });
 
-    // GET BOOKING
+    // GET BOOKING all
     app.get("/bookings", async (req, res) => {
       const bookings = await bookingsCollection.find({}).toArray();
       res.send(bookings);
