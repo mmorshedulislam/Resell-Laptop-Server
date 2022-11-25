@@ -20,12 +20,16 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
+    // USERS
     const usersCollection = client.db("laptopHunter").collection("users");
+    // CATEGORIES OR BRAND
     const categoriesCollection = client
       .db("laptopHunter")
       .collection("categories");
+    // PRODUCTS
     const productsCollection = client.db("laptopHunter").collection("products");
-
+    // BOOKINGS OR ORDERS
+    const bookingsCollection = client.db("laptopHunter").collection("bookings");
     // SAVE USER
     app.post("/users", async (req, res) => {
       const user = req.body;
@@ -158,6 +162,19 @@ async function run() {
       const query = { _id: ObjectId(id) };
       const result = await productsCollection.deleteOne(query);
       res.send(result);
+    });
+
+    // PRODUCT BOOKING
+    app.post("/booking", async (req, res) => {
+      const booking = req.body;
+      const result = await bookingsCollection.insertOne(booking);
+      res.send(result);
+    });
+
+    // GET BOOKING
+    app.get("/bookings", async (req, res) => {
+      const bookings = await bookingsCollection.find({}).toArray();
+      res.send(bookings);
     });
 
     // mongodb ends
