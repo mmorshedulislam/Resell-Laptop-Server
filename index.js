@@ -100,10 +100,63 @@ async function run() {
       res.send(products);
     });
 
+    // QUERY WITH BRAND
     app.get("/product", async (req, res) => {
       const brand = req.query.brand;
       const query = { brand: brand };
       const result = await productsCollection.find(query).toArray();
+      res.send(result);
+    });
+
+    // QUERY WITH EMAIL
+    app.get("/myproduct", async (req, res) => {
+      const email = req.query.email;
+      const query = { sellerEmail: email };
+      const products = await productsCollection.find(query).toArray();
+      res.send(products);
+    });
+
+    // UPDATE MY PRODUCT STATUS SOLD
+    app.put("/productsold/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: ObjectId(id) };
+      const options = { upsert: true };
+      const updateDoc = {
+        $set: {
+          status: "sold",
+        },
+      };
+      const result = await productsCollection.updateOne(
+        filter,
+        updateDoc,
+        options
+      );
+      res.send(result);
+    });
+
+    // UPDATE MY PRODUCT STATUS AVAILABLE
+    app.put("/productavailable/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: ObjectId(id) };
+      const options = { upsert: true };
+      const updateDoc = {
+        $set: {
+          status: "available",
+        },
+      };
+      const result = await productsCollection.updateOne(
+        filter,
+        updateDoc,
+        options
+      );
+      res.send(result);
+    });
+
+    // DELETE MY PRODUCTS
+    app.delete("/myproduct/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const result = await productsCollection.deleteOne(query);
       res.send(result);
     });
 
