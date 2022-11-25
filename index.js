@@ -2,7 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const port = process.env.PORT || 5000;
 require("dotenv").config();
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 
 const app = express();
 
@@ -21,6 +21,10 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     const usersCollection = client.db("laptopHunter").collection("users");
+    const categoriesCollection = client
+      .db("laptopHunter")
+      .collection("categories");
+    const productsCollection = client.db("laptopHunter").collection("products");
 
     // SAVE USER
     app.post("/users", async (req, res) => {
@@ -31,7 +35,8 @@ async function run() {
 
     // GET USERS
     app.get("/users", async (req, res) => {
-      const query = {};
+      const userType = req.query.userType;
+      const query = { userType: userType };
       const users = await usersCollection.find(query).toArray();
       res.send(users);
     });
@@ -43,6 +48,66 @@ async function run() {
       const user = await usersCollection.findOne(query);
       res.send(user);
     });
+
+    // VERIFIED SELLERS
+    app.put("/user/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const options = { upsert: true };
+      const updateDoc = {
+        $set: {
+          verified: true,
+        },
+      };
+      const result = await usersCollection.updateOne(query, updateDoc, options);
+      res.send(result);
+    });
+
+    // DELETE SELLERS
+    app.delete("/user/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const result = await usersCollection.deleteOne(query);
+      res.send(result);
+    });
+
+    // BRANDS
+    app.get("/brands", async (req, res) => {
+      const query = {};
+      const brands = await categoriesCollection.find(query).toArray();
+      res.send(brands);
+    });
+
+    // BRAND
+    app.get("/brand/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const brand = await categoriesCollection.findOne(query);
+      res.send(brand);
+    });
+
+    // ADD PRODUCT
+    app.post("/addproducts", async (req, res) => {
+      const product = req.body;
+      const result = await productsCollection.insertOne(product);
+      res.send(result);
+    });
+
+    // ALL PRODUCTS
+    app.get("/products", async (req, res) => {
+      const query = {};
+      const products = await productsCollection.find(query).toArray();
+      res.send(products);
+    });
+
+    app.get("/product", async (req, res) => {
+      const brand = req.query.brand;
+      const query = { brand: brand };
+      const result = await productsCollection.find(query).toArray();
+      res.send(result);
+    });
+
+    // mongodb ends
   } catch (error) {
     console.log(error);
   }
