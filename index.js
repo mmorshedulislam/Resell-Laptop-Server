@@ -10,6 +10,33 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// VERIFY JWT TOKEN
+const verifyJWT = (req, res, next) => {
+  const authHead = req.headers.authorization;
+  if (!authHead) {
+    return res.status(401).send({ message: "Unauthorized Access." });
+  }
+  const token = authHead.split(" ")[1];
+  jwt.verify(token, process.env.SECRET_ACCESS_TOKEN, function (err, decoded) {
+    if (err) {
+      return res.status(403).send({ message: "Forbidden Access" });
+    }
+    req.decoded = decoded;
+    next();
+  });
+};
+
+// VERIFY EMAIL WITH JWT
+const verifyEmail = (req, res, next) => {
+  const userEmail = req.query.email;
+  const decodedEmail = req.decoded.email;
+  console.log("uEmail", userEmail);
+  if (userEmail !== decodedEmail) {
+    return res.status(403).send({ message: "Forbidden Access." });
+  }
+  next();
+};
+
 // MONGODB STARTS
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.wobl1ex.mongodb.net/?retryWrites=true&w=majority`;
 
@@ -182,9 +209,11 @@ async function run() {
       res.send(result);
     });
 
-    // GET BOOKING all
+    // GET BOOKING BY EMAIL
     app.get("/bookings", async (req, res) => {
-      const bookings = await bookingsCollection.find({}).toArray();
+      const email = req.query.email;
+      const query = { buyerEmail: email };
+      const bookings = await bookingsCollection.find(query).toArray();
       res.send(bookings);
     });
 
