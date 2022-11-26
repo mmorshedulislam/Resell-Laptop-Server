@@ -30,7 +30,6 @@ const verifyJWT = (req, res, next) => {
 const verifyEmail = (req, res, next) => {
   const userEmail = req.query.email;
   const decodedEmail = req.decoded.email;
-  console.log("uEmail", userEmail);
   if (userEmail !== decodedEmail) {
     return res.status(403).send({ message: "Forbidden Access." });
   }
@@ -58,12 +57,6 @@ async function run() {
     const productsCollection = client.db("laptopHunter").collection("products");
     // BOOKINGS OR ORDERS
     const bookingsCollection = client.db("laptopHunter").collection("bookings");
-    // SAVE USER
-    app.post("/users", async (req, res) => {
-      const user = req.body;
-      const result = await usersCollection.insertOne(user);
-      res.send(result);
-    });
 
     // CREATE OR SIGN JWT TOKEN
     app.post("/jwt", (req, res) => {
@@ -71,12 +64,18 @@ async function run() {
       const token = jwt.sign(email, process.env.SECRET_ACCESS_TOKEN, {
         expiresIn: "1d",
       });
-      console.log(token);
       res.send({ token });
     });
 
+    // SAVE USER
+    app.post("/users", async (req, res) => {
+      const user = req.body;
+      const result = await usersCollection.insertOne(user);
+      res.send(result);
+    });
+
     // GET USERS
-    app.get("/users", async (req, res) => {
+    app.get("/users", verifyJWT, verifyEmail, async (req, res) => {
       const userType = req.query.userType;
       const query = { userType: userType };
       const users = await usersCollection.find(query).toArray();
@@ -92,17 +91,27 @@ async function run() {
     });
 
     // VERIFIED SELLERS
-    app.put("/user/:id", async (req, res) => {
+    app.put("/verifyuser/:id", verifyJWT, verifyEmail, async (req, res) => {
       const id = req.params.id;
-      const query = { _id: ObjectId(id) };
-      const options = { upsert: true };
-      const updateDoc = {
-        $set: {
-          verified: true,
-        },
-      };
-      const result = await usersCollection.updateOne(query, updateDoc, options);
-      res.send(result);
+      const email = req.query.email;
+      const query = { email };
+      const user = await usersCollection.findOne(query);
+      
+      if (user.role === "admin") {
+        const query = { _id: ObjectId(id) };
+        const options = { upsert: true };
+        const updateDoc = {
+          $set: {
+            verified: true,
+          },
+        };
+        const result = await usersCollection.updateOne(
+          query,
+          updateDoc,
+          options
+        );
+        res.send(result);
+      }
     });
 
     // DELETE SELLERS
@@ -210,11 +219,38 @@ async function run() {
     });
 
     // GET BOOKING BY EMAIL
-    app.get("/bookings", async (req, res) => {
+    app.get("/bookings", verifyJWT, verifyEmail, async (req, res) => {
       const email = req.query.email;
       const query = { buyerEmail: email };
       const bookings = await bookingsCollection.find(query).toArray();
       res.send(bookings);
+    });
+
+    // isAdmin
+    app.get("/users/admin/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { email };
+      const user = await usersCollection.findOne(query);
+      const isAdmin = user.role === "admin";
+      res.send({ isAdmin });
+    });
+
+    // isBuyer
+    app.get("/users/buyer/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { email };
+      const user = await usersCollection.findOne(query);
+      const isBuyer = user?.userType === "buyer";
+      res.send({ isBuyer });
+    });
+
+    // isSeller
+    app.get("/users/seller/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { email };
+      const user = await usersCollection.findOne(query);
+      const isSeller = user?.userType === "seller";
+      res.send({ isSeller });
     });
 
     // mongodb ends
