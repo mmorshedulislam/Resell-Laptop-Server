@@ -69,6 +69,9 @@ async function run() {
     // WISHLIST PRODUCTS
     const wishlistCollection = client.db("laptopHunter").collection("wishlist");
 
+    // BLOGS
+    const blogsCollection = client.db("laptopHunter").collection("blogs");
+
     // CREATE OR SIGN JWT TOKEN
     app.post("/jwt", (req, res) => {
       const email = req.body;
@@ -297,13 +300,14 @@ async function run() {
     // SAVE ADS PRODUCT
     app.post("/adsproduct", async (req, res) => {
       const product = req.body;
-      const filter = { _id: ObjectId(product._id)};
+      const filter = { _id: ObjectId(product._id) };
       const options = { upsert: true };
       const updateDoc = {
         $set: {
           ads: true,
         },
       };
+
       const updateProduct = await productsCollection.updateOne(
         filter,
         updateDoc,
@@ -317,6 +321,13 @@ async function run() {
     app.get("/adsproduct", async (req, res) => {
       const adsproducts = await adsProductsCollection.find({}).toArray();
       res.send(adsproducts);
+    });
+
+    // BLOGS
+    app.get("/blogs", async (req, res) => {
+      const query = {};
+      const blogs = await blogsCollection.find(query).toArray();
+      res.send(blogs);
     });
 
     // mongodb ends
