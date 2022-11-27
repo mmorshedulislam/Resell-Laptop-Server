@@ -49,14 +49,25 @@ async function run() {
   try {
     // USERS
     const usersCollection = client.db("laptopHunter").collection("users");
+
     // CATEGORIES OR BRAND
     const categoriesCollection = client
       .db("laptopHunter")
       .collection("categories");
+
     // PRODUCTS
     const productsCollection = client.db("laptopHunter").collection("products");
+
     // BOOKINGS OR ORDERS
     const bookingsCollection = client.db("laptopHunter").collection("bookings");
+
+    // ADS PRODUCTS
+    const adsProductsCollection = client
+      .db("laptopHunter")
+      .collection("adsProducts");
+
+    // WISHLIST PRODUCTS
+    const wishlistCollection = client.db("laptopHunter").collection("wishlist");
 
     // CREATE OR SIGN JWT TOKEN
     app.post("/jwt", (req, res) => {
@@ -78,7 +89,7 @@ async function run() {
     app.put("/googleuser/:email", async (req, res) => {
       const email = req.params.email;
       const user = req.body;
-      
+
       const filter = { email };
       const options = { upsert: true };
       const updateDoc = {
@@ -241,12 +252,19 @@ async function run() {
       res.send(result);
     });
 
-    // GET BOOKING BY EMAIL
+    // GET BOOKING or ORDERS BY EMAIL
     app.get("/bookings", verifyJWT, verifyEmail, async (req, res) => {
       const email = req.query.email;
       const query = { buyerEmail: email };
       const bookings = await bookingsCollection.find(query).toArray();
       res.send(bookings);
+    });
+
+    // MY BUYERS
+    app.get("/mybuyers", async (req, res) => {
+      const query = {};
+      const mybuyers = await bookingsCollection.find(query).toArray();
+      res.send(mybuyers);
     });
 
     // isAdmin
@@ -274,6 +292,31 @@ async function run() {
       const user = await usersCollection.findOne(query);
       const isSeller = user?.userType === "seller";
       res.send({ isSeller });
+    });
+
+    // SAVE ADS PRODUCT
+    app.post("/adsproduct", async (req, res) => {
+      const product = req.body;
+      const filter = { _id: ObjectId(product._id)};
+      const options = { upsert: true };
+      const updateDoc = {
+        $set: {
+          ads: true,
+        },
+      };
+      const updateProduct = await productsCollection.updateOne(
+        filter,
+        updateDoc,
+        options
+      );
+      const result = await adsProductsCollection.insertOne(product);
+      res.send(result);
+    });
+
+    // GET ADS PRODUCT
+    app.get("/adsproduct", async (req, res) => {
+      const adsproducts = await adsProductsCollection.find({}).toArray();
+      res.send(adsproducts);
     });
 
     // mongodb ends
