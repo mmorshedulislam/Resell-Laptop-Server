@@ -74,6 +74,29 @@ async function run() {
       res.send(result);
     });
 
+    // SAVE GOOGLE USER
+    app.put("/googleuser/:email", async (req, res) => {
+      const email = req.params.email;
+      const user = req.body;
+      
+      const filter = { email };
+      const options = { upsert: true };
+      const updateDoc = {
+        $set: {
+          name: user.name,
+          email: user.email,
+          image: user.image,
+          userType: user.userType,
+        },
+      };
+      const result = await usersCollection.updateOne(
+        filter,
+        updateDoc,
+        options
+      );
+      res.send(result);
+    });
+
     // GET USERS
     app.get("/users", verifyJWT, verifyEmail, async (req, res) => {
       const userType = req.query.userType;
@@ -96,8 +119,8 @@ async function run() {
       const email = req.query.email;
       const query = { email };
       const user = await usersCollection.findOne(query);
-      
-      if (user.role === "admin") {
+
+      if (user?.role === "admin") {
         const query = { _id: ObjectId(id) };
         const options = { upsert: true };
         const updateDoc = {
@@ -231,7 +254,7 @@ async function run() {
       const email = req.params.email;
       const query = { email };
       const user = await usersCollection.findOne(query);
-      const isAdmin = user.role === "admin";
+      const isAdmin = user?.role === "admin";
       res.send({ isAdmin });
     });
 
