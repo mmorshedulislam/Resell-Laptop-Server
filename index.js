@@ -61,10 +61,18 @@ async function run() {
     // BOOKINGS OR ORDERS
     const bookingsCollection = client.db("laptopHunter").collection("bookings");
 
+    // BOOKINGS OR ORDERS
+    const wishListCollection = client.db("laptopHunter").collection("wishlist");
+
     // ADS PRODUCTS
     const adsProductsCollection = client
       .db("laptopHunter")
       .collection("adsProducts");
+
+    // ADS PRODUCTS
+    const adsProductsCollection2 = client
+      .db("laptopHunter")
+      .collection("adsProducts2");
 
     // WISHLIST PRODUCTS
     const wishlistCollection = client.db("laptopHunter").collection("wishlist");
@@ -263,9 +271,41 @@ async function run() {
       res.send(bookings);
     });
 
+    // DELETE ORDERS
+    app.delete("/myorders/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const result = await bookingsCollection.deleteOne(query);
+      res.send(result);
+    });
+
+    // ADD TO WISHLIST
+    app.post("/wishlist", async (req, res) => {
+      const product = req.body;
+      const result = await wishListCollection.insertOne(product);
+      res.send(result);
+    });
+
+    // GET WISHLIST
+    app.get("/wishlist/", async (req, res) => {
+      const email = req.query.email;
+      const query = { buyerEmail: email };
+      const wishlist = await wishListCollection.find(query).toArray();
+      res.send(wishlist);
+    });
+
+    // DELETE WISHLIST
+    app.delete("/mywishlist/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const result = await wishListCollection.deleteOne(query);
+      res.send(result);
+    });
+
     // MY BUYERS
-    app.get("/mybuyers", async (req, res) => {
-      const query = {};
+    app.get("/mybuyers/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { sellerEmail: email };
       const mybuyers = await bookingsCollection.find(query).toArray();
       res.send(mybuyers);
     });
@@ -298,9 +338,9 @@ async function run() {
     });
 
     // SAVE ADS PRODUCT
-    app.post("/adsproduct", async (req, res) => {
-      const product = req.body;
-      const filter = { _id: ObjectId(product._id) };
+    app.put("/products/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: ObjectId(id) };
       const options = { upsert: true };
       const updateDoc = {
         $set: {
@@ -313,7 +353,13 @@ async function run() {
         updateDoc,
         options
       );
-      const result = await adsProductsCollection.insertOne(product);
+      res.send(updateProduct);
+    });
+
+    // V2 adsproduct
+    app.post("/v2/adsproduct", async (req, res) => {
+      const product = req.body;
+      const result = await adsProductsCollection2.insertOne(product);
       res.send(result);
     });
 
@@ -323,10 +369,26 @@ async function run() {
       res.send(adsproducts);
     });
 
-    // BLOGS
+    // GET ADS PRODUCT
+    app.get("/adsproduct3", async (req, res) => {
+      const adsproducts = await adsProductsCollection
+        .find({})
+        .limit(3)
+        .toArray();
+      res.send(adsproducts);
+    });
+
+    // ALL BLOGS
     app.get("/blogs", async (req, res) => {
       const query = {};
       const blogs = await blogsCollection.find(query).toArray();
+      res.send(blogs);
+    });
+
+    // 3 BLOGS
+    app.get("/blogs3", async (req, res) => {
+      const query = {};
+      const blogs = await blogsCollection.find(query).limit(3).toArray();
       res.send(blogs);
     });
 
