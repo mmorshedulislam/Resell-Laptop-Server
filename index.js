@@ -3,6 +3,7 @@ const express = require("express");
 const cors = require("cors");
 const port = process.env.PORT || 5000;
 const jwt = require("jsonwebtoken");
+const stripe = require("stripe")(`${process.env.STRIPE_SK}`);
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 
 const app = express();
@@ -282,6 +283,14 @@ async function run() {
       res.send(bookings);
     });
 
+    //  BOOKING BY id
+    app.get("/booking/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const booking = await bookingsCollection.findOne(query);
+      res.send(booking);
+    });
+
     // DELETE ORDERS
     app.delete("/myorders/:id", async (req, res) => {
       const id = req.params.id;
@@ -401,6 +410,35 @@ async function run() {
       const query = {};
       const blogs = await blogsCollection.find(query).limit(3).toArray();
       res.send(blogs);
+    });
+
+    // STRIPE PK
+    app.post("/create-payment-intent", async (req, res) => {
+      const booking = req.body;
+      const price = booking.price;
+      const amount = price * 100;
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: "usd",
+        payment_method_types: ["card"],
+      });
+      res.send(paymentIntent);
+    });
+
+    // SAVE PAYMENT INFO
+    app.post("/paymentinfo", async (req, res) => {
+      const paymentInfo = req.body;
+      const id = paymentInfo.bookingId;
+      const query = { _id: ObjectId(id) };
+      const options = { upsert: true };
+      const updateDoc = {
+        $set: {
+          paid: true,
+          transactionId: paymentInfo.transactionId
+        },
+      };
+      const updateBookingInfo = await bookingsCollection.updateOne(query, updateDoc, options)
+      res.send(updateBookingInfo)
     });
 
     // mongodb ends
